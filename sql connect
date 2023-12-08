@@ -1,0 +1,17 @@
+import mysql.connector
+
+mydb = mysql.connector.connect(
+          host="localhost",
+          user="root",
+          password="aadi1234"
+          )
+
+myc= mydb.cursor()
+myc.execute("use PROJECT;")
+myc.execute("DROP TABLE IF EXISTS products;")
+myc.execute("CREATE TABLE products AS SELECT * FROM productcopy;")
+myc.execute("DROP TABLE IF EXISTS CART")
+myc.execute("CREATE TABLE CART (`id` int, `ProductName` varchar(255) DEFAULT NULL,`MSRP` float(11,3) DEFAULT NULL,`Quantity` int);")
+myc.execute("ALTER TABLE products ADD PRIMARY KEY (id)")
+myc.execute("ALTER TABLE products ADD CONSTRAINT invc CHECK(InventoryOnHand=InventoryReceived-InventoryShipped);")
+myc.execute("ALTER TABLE products ADD CONSTRAINT c1 CHECK(InventoryReceived>=0 and InventoryShipped>=0 and InventoryOnHand>=0 and MinimumRequired>=0);")
