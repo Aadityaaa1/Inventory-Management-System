@@ -1,0 +1,350 @@
+
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import tkinter as tk 
+from functools import partial
+import mysql.connector
+def inv():
+        mydb = mysql.connector.connect(
+                  host="localhost",
+                  user="root",
+                  password="aadi1234"
+                  )
+        myc= mydb.cursor()
+        myc.execute("use PROJECT;")
+        root = tk.Toplevel()
+        root.title('INVENTORY MANAGER')
+        root.geometry("1200x600+120+50")
+        root.iconbitmap('favicon.ico')
+
+        def query_database():
+                
+                myc.execute("SELECT  * FROM products;")
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree.insert(parent='', index='end', iid=count, text='',
+                                               values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('evenrow',))
+                        else:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('oddrow',))
+                        count = count+ 1
+        def reset_database():
+                # Clear the Treeview
+                for record in my_tree.get_children():
+                        my_tree.delete(record)
+                query_database()
+        def search_records():
+                lookup_record = search_entry.get()
+                search.destroy()
+                for record in my_tree.get_children():
+                        my_tree.delete(record)
+                data=[lookup_record+'%']
+                myc.execute("SELECT * FROM products WHERE ProductName like %s ", (data))
+                
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('evenrow',))
+                        else:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('oddrow',))
+                        count = count+ 1
+                mydb.commit()
+        def lookup_records():
+                global search_entry, search
+
+                search = Toplevel(root)
+                search.title("Lookup Records")
+                search.geometry("400x200")
+
+                # Create label frame
+                search_frame = LabelFrame(search, text="Item Name")
+                search_frame.pack(padx=10, pady=10)
+
+                # Add entry box
+                search_entry = Entry(search_frame, font=("Helvetica", 18))
+                search_entry.pack(pady=20, padx=20)
+
+                # Add button
+                search_button = Button(search, text="Search Records", command=search_records)
+                search_button.pack(padx=20, pady=20)
+        def low_stock():
+                for record in my_tree.get_children():
+                        my_tree.delete(record)
+                myc.execute("SELECT * FROM products WHERE InventoryOnhand < MinimumRequired ");
+                
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('evenrow',))
+                        else:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3], record[4], record[5], record[6]), tags=('oddrow',))
+                        count = count+ 1
+                mydb.commit()
+        def clear_entries():
+                # Clear entry boxes
+                pn_entry.delete(0, END)
+                qu_entry.delete(0, END)
+                msrp_entry.delete(0, END)
+                id_entry.config(state=NORMAL)
+
+        # Select Record
+        def select_record(e):
+                 # Clear entry boxes
+                id_entry.config(state=NORMAL)
+                id_entry.delete(0, END)
+                pn_entry.delete(0, END)
+                ir_entry.delete(0, END)
+                is_entry.delete(0, END)
+                io_entry.delete(0, END)
+                mr_entry.delete(0, END)
+                msrp_entry.delete(0, END)
+
+                # Grab record Number
+                selected = my_tree.focus()
+                # Grab record values
+                values = my_tree.item(selected, 'values')
+
+                # outputs to entry boxes
+                
+                id_entry.insert(0, values[0])
+                pn_entry.insert(0, values[1])
+                ir_entry.insert(0, values[2])
+                is_entry.insert(0, values[3])
+                io_entry.insert(0, values[4])
+                mr_entry.insert(0, values[5])
+                msrp_entry.insert(0, values[6])
+                id_entry.config(state=DISABLED)
+                #global var to check if chosen quantity is more than inventory on hand
+                listofglobals=globals()
+                listofglobals['inonhand']=(values[2])
+                
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("Treeview",
+                background="#D3D3D3",
+                foreground="black",
+                rowheight=25,
+                fieldbackground="#D3D3D3")
+        style.map('Treeview',
+                background=[('selected', "#347083")])
+        tree_frame = Frame(root)
+        tree_frame.pack(pady=10)
+        tree_scroll = Scrollbar(tree_frame)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+        my_tree = ttk.Treeview(tree_frame, yscrollcommand=tree_scroll.set, selectmode="extended")
+        my_tree.pack()
+        tree_scroll.config(command=my_tree.yview)
+        my_tree['columns'] = ("id", "ProductName", "InventoryReceived", "InventoryShipped", "InventoryOnHand", "MinimumRequired", "MSRP")
+
+
+        my_tree.column("#0", width=0, stretch=NO)
+        my_tree.column("id", anchor=W, width=140)
+        my_tree.column("ProductName", anchor=W, width=140)
+        my_tree.column("InventoryReceived", anchor=CENTER, width=100)
+        my_tree.column("InventoryShipped", anchor=CENTER, width=140)
+        my_tree.column("InventoryOnHand", anchor=CENTER, width=140)
+        my_tree.column("MinimumRequired", anchor=CENTER, width=140)
+        my_tree.column("MSRP", anchor=CENTER, width=140)
+
+
+        my_tree.heading("#0", text="", anchor=W)
+        my_tree.heading("id", text="id", anchor=W)
+        my_tree.heading("ProductName", text="ProductName", anchor=W)
+        my_tree.heading("InventoryReceived", text="InventoryReceived", anchor=CENTER)
+        my_tree.heading("InventoryShipped", text="InventoryShipped", anchor=CENTER)
+        my_tree.heading("InventoryOnHand", text="InventoryOnHand", anchor=CENTER)
+        my_tree.heading("MinimumRequired", text="MinimumRequired", anchor=CENTER)
+        my_tree.heading("MSRP", text="MSRP", anchor=CENTER)
+
+
+
+        my_tree.tag_configure('oddrow', background="white")
+        my_tree.tag_configure('evenrow', background="lightblue")
+
+
+        data_frame = LabelFrame(root, text="Record")
+        data_frame.pack(fill="x", expand="yes", padx=20)
+
+        id_label = Label(data_frame, text="id")
+        id_label.grid(row=0, column=0, padx=10, pady=10)
+        id_entry = Entry(data_frame)
+        id_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        pn_label = Label(data_frame, text="ProductName")
+        pn_label.grid(row=0, column=2, padx=10, pady=10)
+        pn_entry = Entry(data_frame)
+        pn_entry.grid(row=0, column=3, padx=10, pady=10)
+
+        ir_label = Label(data_frame, text="InventoryReceived")
+        ir_label.grid(row=0, column=4, padx=10, pady=10)
+        ir_entry = Entry(data_frame)
+        ir_entry.grid(row=0, column=5, padx=10, pady=10)
+
+        is_label = Label(data_frame, text="InventoryShipped")
+        is_label.grid(row=1, column=0, padx=10, pady=10)
+        is_entry = Entry(data_frame)
+        is_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        io_label = Label(data_frame, text="InventoryOnHand")
+        io_label.grid(row=1, column=2, padx=10, pady=10)
+        io_entry = Entry(data_frame)
+        io_entry.grid(row=1, column=3, padx=10, pady=10)
+
+        mr_label = Label(data_frame, text="MinimumRequired")
+        mr_label.grid(row=1, column=4, padx=10, pady=10)
+        mr_entry = Entry(data_frame)
+        mr_entry.grid(row=1, column=5, padx=10, pady=10)
+
+        msrp_label = Label(data_frame, text="MSRP")
+        msrp_label.grid(row=1, column=6, padx=10, pady=10)
+        msrp_entry = Entry(data_frame)
+        msrp_entry.grid(row=1, column=7, padx=10, pady=10)
+
+        # Move Row Up
+        def up():
+                rows = my_tree.selection()
+                for row in rows:
+                        my_tree.move(row, my_tree.parent(row), my_tree.index(row)-1)
+
+        # Move Rown Down
+        def down():
+                rows = my_tree.selection()
+                for row in reversed(rows):
+                        my_tree.move(row, my_tree.parent(row), my_tree.index(row)+1)
+
+        # Remove one record
+        def remove_one():
+                x = my_tree.selection()[0]
+                my_tree.delete(x)
+                data= (id_entry.get(),)
+                myc.execute("DELETE FROM products WHERE id=%s",data)
+                mydb.commit()
+                clear_entries()
+                messagebox.showinfo("Deleted!", "Your Record Has Been Deleted!")
+        # Remove Many records
+        def remove_many():
+               response = messagebox.askyesno("WOAH!!!!", "This Will Delete EVERYTHING SELECTED From The Table\nAre You Sure?!")
+               if response == 1:
+                        x = my_tree.selection()
+
+                        ids_to_delete = []
+
+                        for record in x:
+                                ids_to_delete.append(my_tree.item(record, 'values')[0])
+
+                        for record in x:
+                                my_tree.delete(record)
+                        for idt in ids_to_delete:
+                                data=[idt]
+                                myc.execute("DELETE FROM products WHERE id = %s",data)
+                                mydb.commit()
+                        ids_to_delete = []
+                        mydb.commit()
+                        clear_entries()
+                        messagebox.showinfo("Deleted!", "Your Record Has Been Deleted!")
+        def remove_all():
+                response = messagebox.askyesno("WOAH!!!!", "This Will Delete EVERYTHING From The Table\nAre You Sure?!")
+                if response == 1:
+                        for record in my_tree.get_children():
+                                my_tree.delete(record)
+                        myc.execute("DELETE FROM products;")
+                        mydb.commit()
+
+       
+        # Update record
+        def update_record():
+                try:
+                        
+                        selected = my_tree.focus()
+                        if int(io_entry.get())==int(ir_entry.get())-int(is_entry.get()):
+                                my_tree.item(selected, text="", values=(id_entry.get(), pn_entry.get(), ir_entry.get(), is_entry.get(), io_entry.get(), mr_entry.get(), msrp_entry.get(),))
+                        data=(pn_entry.get(),ir_entry.get(),is_entry.get(),io_entry.get(),mr_entry.get(),msrp_entry.get(),id_entry.get())
+                        myc.execute("UPDATE products SET ProductName=%s,InventoryReceived=%s,\
+                                    InventoryShipped=%s,InventoryOnHand=%s,MinimumRequired=%s,MSRP=%s WHERE id=%s",data)
+                        mydb.commit()
+                        clear_entries()
+                except mysql.connector.Error as e:
+                        if e.errno==1062:
+                                messagebox.showerror("OOPS!","Sorry, key already exists")
+                        elif e.errno==3819:
+                                messagebox.showerror("OOPS!","There appears to be something wrong with the values you just entered.")
+        def add_record():
+                try:
+                        if id_entry.get()=='':
+                                pass
+                        else:
+                                data=(id_entry.get(),pn_entry.get(),ir_entry.get(),is_entry.get(),io_entry.get(),mr_entry.get(),msrp_entry.get())
+                                myc.execute("INSERT INTO products VALUES(%s,%s,%s,%s,%s,%s,%s)",data)
+                                mydb.commit()
+                                clear_entries()
+                                my_tree.delete(*my_tree.get_children())
+                                query_database()
+                except mysql.connector.Error as e:
+                        if e.errno==1062:
+                                messagebox.showerror("OOPS!","Sorry, key already exists")
+                        elif e.errno==3819:
+                                messagebox.showerror("OOPS!","There appears to be something wrong with the values you just entered.")
+        def clear_entries():
+                # Clear entry boxes
+                id_entry.delete(0, END)
+                pn_entry.delete(0, END)
+                ir_entry.delete(0, END)
+                is_entry.delete(0, END)
+                io_entry.delete(0, END)
+                mr_entry.delete(0, END)
+                msrp_entry.delete(0, END)        
+                id_entry.config(state=NORMAL)
+        button_frame = LabelFrame(root, text="Commands")
+        button_frame.pack(fill="x", expand="yes", padx=20)
+
+        update_button = Button(button_frame, text="Update Record", command=update_record)
+        update_button.grid(row=0, column=0, padx=10, pady=10)
+
+        add_button = Button(button_frame, text="Add Record",command=add_record)
+        add_button.grid(row=0, column=1, padx=10, pady=10)
+
+        remove_all_button = Button(button_frame, text="Remove All Records", command=remove_all)
+        remove_all_button.grid(row=0, column=4, padx=10, pady=10)
+
+        remove_one_button = Button(button_frame, text="Remove One Selected", command=remove_one)
+        remove_one_button.grid(row=0, column=2, padx=10, pady=10)
+
+        remove_many_button = Button(button_frame, text="Remove Many Selected", command=remove_many)
+        remove_many_button.grid(row=0, column=3, padx=10, pady=10)
+
+        move_up_button = Button(button_frame, text="Move Up", command=up)
+        move_up_button.grid(row=0, column=5, padx=10, pady=10)
+
+        move_down_button = Button(button_frame, text="Move Down", command=down)
+        move_down_button.grid(row=0, column=6, padx=10, pady=10)
+
+        clear_record_button = Button(button_frame, text="Clear Entry Boxes", command=clear_entries)
+        clear_record_button.grid(row=0, column=7, padx=10, pady=10)
+                
+        # Add Menu
+        my_menu = Menu(root)
+        root.config(menu=my_menu)
+
+        # Configure menu
+        search_menu = Menu(my_menu, tearoff=0)
+        my_menu.add_cascade(label="Search", menu=search_menu)
+
+        # Drop down menu
+        search_menu.add_command(label="Search", command=lookup_records)
+        search_menu.add_separator()
+        search_menu.add_command(label="view low stock", command=low_stock)
+        search_menu.add_separator()
+        search_menu.add_command(label="Reset", command=reset_database)
+
+        my_tree.bind("<<TreeviewSelect>>", select_record)
+
+        # Run to pull data from database on start
+        query_database()
+
+        root.mainloop()
+
+inv()
