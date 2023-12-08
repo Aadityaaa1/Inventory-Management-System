@@ -1,0 +1,299 @@
+from tkinter import *
+from tkinter import ttk
+from tkinter import messagebox
+import tkinter as tk 
+from functools import partial
+import mysql.connector
+def bil():
+        inonhand=0
+        mydb = mysql.connector.connect(
+                  host="localhost",
+                  user="root",
+                  password="Sam123"
+                  )
+        myc= mydb.cursor()
+        myc.execute("use PROJECT;")
+        root = Tk()
+        root.title('INVENTORY MANAGER')
+        root.geometry("1000x500+120+50")
+        root.iconbitmap('favicon.ico')
+        myc.execute("DELETE FROM cart;")
+        mydb.commit()
+
+        def query_database():
+                
+                myc.execute("SELECT id,ProductName,InventoryOnHand,MSRP FROM products;")
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3],), tags=('evenrow',))
+                        else:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3],), tags=('oddrow',))
+                        count = count+ 1
+
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("Treeview",
+                background="#D3D3D3",
+                foreground="black",
+                rowheight=25,
+                fieldbackground="#D3D3D3")
+        style.map('Treeview',
+                background=[('selected', "#347083")])
+        tree_frame = Frame(root)
+        tree_frame.place(x=10,y=20)
+        tree_scroll = Scrollbar(tree_frame)
+        tree_scroll.pack(side=RIGHT, fill=Y)
+        my_tree = ttk.Treeview(tree_frame, yscrollcommand=tree_scroll.set, selectmode="extended")
+        my_tree.pack()
+        tree_scroll.config(command=my_tree.yview)
+        my_tree['columns'] = ("id", "ProductName", "InventoryOnHand","MSRP")
+
+
+        my_tree.column("#0", width=0, stretch=NO)
+        my_tree.column("id", anchor=W, width=90)
+        my_tree.column("ProductName", anchor=W, width=100)
+        my_tree.column("InventoryOnHand", anchor=CENTER, width=150)
+        my_tree.column("MSRP", anchor=CENTER, width=100)
+
+
+        my_tree.heading("#0", text="", anchor=W)
+        my_tree.heading("id", text="id", anchor=W)
+        my_tree.heading("ProductName", text="ProductName", anchor=W)
+        my_tree.heading("InventoryOnHand", text="InventoryOnHand", anchor=CENTER)
+        my_tree.heading("MSRP", text="MSRP", anchor=CENTER)
+
+
+        my_tree.tag_configure('oddrow', background="white")
+        my_tree.tag_configure('evenrow', background="lightblue")
+
+        def query_databasecart():
+                
+                myc.execute("SELECT id,ProductName,MSRP,Quantity FROM cart;")
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree1.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2],record[3]), tags=('evenrow',))
+                        else:
+                                my_tree1.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2],record[3]), tags=('oddrow',))
+                        count = count+ 1
+        tree_frame1 = Frame(root)
+        tree_frame1.place(x=600,y=20)
+        tree_scroll1 = Scrollbar(tree_frame1)
+        tree_scroll1.pack(side=RIGHT, fill=Y)
+        my_tree1 = ttk.Treeview(tree_frame1, yscrollcommand=tree_scroll1.set, selectmode="extended")
+        my_tree1.pack()
+        tree_scroll1.config(command=my_tree1.yview)
+        my_tree1['columns'] = ("id","ProductName", "MSRP","Quantity")
+
+
+        my_tree1.column("#0", width=0, stretch=NO)
+        my_tree1.column("id", anchor=W, width=90)
+        my_tree1.column("ProductName", anchor=W, width=100)
+        my_tree1.column("MSRP", anchor=W, width=100)
+        my_tree1.column("Quantity", anchor=CENTER, width=100)
+
+        my_tree1.heading("#0", text="", anchor=W)
+        my_tree1.heading("id", text="id", anchor=W)
+        my_tree1.heading("ProductName", text="ProductName", anchor=W)
+        my_tree1.heading("MSRP", text="MSRP", anchor=W)
+        my_tree1.heading("Quantity", text="Quantity", anchor=CENTER)
+
+
+        my_tree1.tag_configure('oddrow', background="white")
+        my_tree1.tag_configure('evenrow', background="lightblue")
+
+        data_frame = LabelFrame(root, text="Record")
+        data_frame.place(x=10,y=300)
+        id_entry=Entry(root)
+        id_entry.place(x=500,y=500)
+        pn_label = Label(data_frame, text="ProductName")
+        pn_label.grid(row=0, column=0, padx=10, pady=10)
+        pn_entry = Entry(data_frame)
+        pn_entry.grid(row=0, column=1, padx=10, pady=10)
+
+        msrp_label = Label(data_frame, text="MSRP")
+        msrp_label.grid(row=1, column=0, padx=10, pady=10)
+        msrp_entry = Entry(data_frame)
+        msrp_entry.grid(row=1, column=1, padx=10, pady=10)
+
+        qu_label = Label(data_frame, text="quantity")
+        qu_label.grid(row=2, column=0, padx=10, pady=10)
+        qu_entry = Entry(data_frame)
+        qu_entry.grid(row=2, column=1, padx=10, pady=10)
+
+        def reset_database():
+                # Clear the Treeview
+                for record in my_tree.get_children():
+                        my_tree.delete(record)
+                query_database()
+        def search_records():
+                lookup_record = search_entry.get()
+                search.destroy()
+                for record in my_tree.get_children():
+                        my_tree.delete(record)
+                data=[lookup_record+'%']
+                myc.execute("SELECT id,ProductName,InventoryOnHand,MSRP FROM products WHERE ProductName like %s ", (data))
+                
+                global count
+                count = 0
+                for record in myc:
+                        if count % 2 == 0:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3],), tags=('evenrow',))
+                        else:
+                                my_tree.insert(parent='', index='end', iid=count, text='', values=(record[0], record[1], record[2], record[3],), tags=('oddrow',))
+                        count = count+ 1
+                mydb.commit()
+        def lookup_records():
+                global search_entry, search
+
+                search = Toplevel(root)
+                search.title("Lookup Records")
+                search.geometry("400x200")
+
+                # Create label frame
+                search_frame = LabelFrame(search, text="Item Name")
+                search_frame.pack(padx=10, pady=10)
+
+                # Add entry box
+                search_entry = Entry(search_frame, font=("Helvetica", 18))
+                search_entry.pack(pady=20, padx=20)
+
+                # Add button
+                search_button = Button(search, text="Search Records", command=search_records)
+                search_button.pack(padx=20, pady=20)        
+        def clear_entries():
+                # Clear entry boxes
+                pn_entry.delete(0, END)
+                qu_entry.delete(0, END)
+                msrp_entry.delete(0, END)
+
+
+        # Select Record
+        def select_record(e):
+                # Clear entry boxes
+                pn_entry.delete(0, END)
+                msrp_entry.delete(0, END)
+                id_entry.delete(0,END)
+                # Grab record Number
+                selected = my_tree.focus()
+                # Grab record values
+                values = my_tree.item(selected, 'values')
+
+                # outputs to entry boxes
+                id_entry.insert(0,values[0])
+                pn_entry.insert(0, values[1])
+                msrp_entry.insert(0, values[3])
+                qu_entry.insert(END,'')
+                #global var to check if chosen quantity is more than inventory on hand
+                listofglobals=globals()
+                listofglobals['inonhand']=(values[2])
+        def buy():
+                price=0
+                myc.execute("SELECT Quantity,MSRP FROM cart;")
+                for record in myc:
+                        price=price+(record[0]*record[1])
+                messagebox.showinfo("bill",("Total Billable Amount ",price))
+                myc.execute("DELETE FROM cart")
+                mydb.commit()
+                query_databasecart()
+                clear_entries()
+        def buynow():
+                global inonhand
+                print(inonhand)
+                if qu_entry.get()!=''and qu_entry.get()!= '0' and int(qu_entry.get())<= int(inonhand) :
+                        data=(qu_entry.get(),qu_entry.get(),id_entry.get())
+                        myc.execute("UPDATE products SET InventoryShipped=InventoryShipped+%s,InventoryOnHand=InventoryOnHand-%s WHERE id=%s",data)
+                        mydb.commit()
+                        for record in my_tree.get_children():
+                                my_tree.delete(record)
+                        query_database()
+                        tb=(float(msrp_entry.get())*float(qu_entry.get()))
+                        messagebox.showinfo("bill",("Total Billable Amount",tb))
+                        #my_tree1.delete(*my_tree1.get_children())
+                       # selected=my_tree.focus()
+                        #my_tree.item(selected, text="", values=(id_entry.get(),pn_entry.get(),str(int(inonhand)-int(qu_entry.get())), msrp_entry.get()))
+                        clear_entries()
+                else:
+                        if qu_entry.get()=='':
+                                messagebox.showerror("Oh Oh!","Please enter a value")
+                        elif int(qu_entry.get())> int(inonhand):
+                                messagebox.showerror("Oh Oh!","We dont seem to have the number of items u require, try a smaller number or come back later.")
+                        else:
+                                messagebox.showerror("Oh Oh!","There doesnt seem to be a value for number of items")
+        def add_to_cart():
+                global inonhand
+                print(inonhand)
+                if qu_entry.get()!=''and qu_entry.get()!= '0' and int(qu_entry.get())<= int(inonhand):
+                        data=(id_entry.get(),pn_entry.get(), msrp_entry.get(), qu_entry.get())
+                        myc.execute("INSERT INTO cart VALUES(%s,%s,%s,%s)",data)
+                        dataset2=(qu_entry.get(),qu_entry.get(),id_entry.get())
+                        myc.execute("UPDATE products SET InventoryShipped=InventoryShipped+%s,InventoryOnHand=InventoryOnHand-%s WHERE id=%s",dataset2)
+                        mydb.commit()
+                        my_tree1.delete(*my_tree1.get_children())
+                        selected=my_tree.focus()
+                        my_tree.item(selected, text="", values=(id_entry.get(),pn_entry.get(),str(int(inonhand)-int(qu_entry.get())), msrp_entry.get()))
+                        query_databasecart()
+                        clear_entries()
+                else:
+                        if qu_entry.get()=='':
+                                messagebox.showerror("Oh Oh!","Please enter a value")
+                        elif int(qu_entry.get())> int(inonhand):
+                                messagebox.showerror("Oh Oh!","We dont seem to have the number of items u require, try a smaller number or come back later.")
+                        else:
+                                messagebox.showerror("Oh Oh!","There doesnt seem to be a value for number of items")
+        def delete_from_cart():
+                selected=my_tree1.focus()
+                values=my_tree1.item(selected, 'values')
+                data=[values[3],values[3],values[0]]
+                myc.execute("UPDATE products SET InventoryShipped=InventoryShipped-%s,InventoryOnHand=InventoryOnHand+%s WHERE id=%s",data)
+                #x = my_tree1.selection()[0]
+                #my_tree1.delete(x)
+                data= (values[0],)
+                myc.execute("DELETE FROM cart WHERE id=%s",data)
+                mydb.commit()
+                for record in my_tree.get_children():
+                                my_tree.delete(record)
+                for rec in my_tree1.get_children():
+                        my_tree1.delete(rec)
+                query_database()
+                query_databasecart()
+                clear_entries()
+        button_frame = LabelFrame(root, text="Commands")
+        button_frame.place(x=320,y=300)
+
+        add = Button(button_frame, text="add to cart", command=add_to_cart)
+        add.grid(row=0, column=0, padx=10, pady=10)
+
+        buynow_button = Button(button_frame, text="buy now",command=buynow)
+        buynow_button.grid(row=1, column=0, padx=10, pady=10)
+
+        button_frame1 = LabelFrame(root, text="Commands")
+        button_frame1.place(x=600,y=300)
+
+        buy_button = Button(button_frame1, text="buy",command=buy)
+        buy_button.grid(row=1, column=0, padx=10, pady=20)
+        
+        delete_button = Button(button_frame1, text="delete from cart", command=delete_from_cart)
+        delete_button.grid(row=0, column=0, padx=10, pady=10)
+
+        # Add Menu
+        my_menu = Menu(root)
+        root.config(menu=my_menu)
+
+        # Configure menu
+        search_menu = Menu(my_menu, tearoff=0)
+        my_menu.add_cascade(label="Search", menu=search_menu)
+        # Drop down menu
+        search_menu.add_command(label="Search", command=lookup_records)
+        search_menu.add_separator()
+        search_menu.add_command(label="Reset", command=reset_database)
+
+        my_tree.bind("<<TreeviewSelect>>", select_record)
+        # Run to pull data from database on start
+        query_database()
+
+        root.mainloop()
+bil()
