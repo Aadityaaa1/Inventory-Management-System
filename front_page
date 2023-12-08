@@ -1,0 +1,37 @@
+from tkinter import *
+import tkinter as Tk
+import time
+from PIL import ImageTk, Image
+def btn_clicked():
+    window.destroy()
+    import captcha
+
+window = Tk.Tk()
+window.geometry("1152x700+40+00")
+window.configure(bg = "#ffffff")
+window.iconbitmap('favicon.ico')
+canvas = Canvas(window,bg = "#ffffff",height = 700,width = 1152,bd = 0,highlightthickness = 0,relief = "ridge")
+canvas.place(x = 0, y = 0)
+
+background_img = PhotoImage(file = f"background.png")
+background = canvas.create_image(576.0, 350.0,image=background_img)
+
+img0 = PhotoImage(file = f"img0.png")
+b0 = Button(image = img0,borderwidth = 0,highlightthickness = 0,command = btn_clicked,relief = "flat")
+b0.place(x = 501, y = 365,width = 149,height = 91)
+
+def update_clock():
+    hours = time.strftime("%I")
+    minutes = time.strftime("%M")
+    seconds = time.strftime("%S")
+    am_or_pm = time.strftime("%p")
+    time_text = hours + ":" + minutes + ":" + seconds + " " + am_or_pm
+    digital_clock_lbl.config(text=time_text)
+    digital_clock_lbl.after(1000, update_clock)
+digital_clock_lbl = Tk.Label(window, text="00:00:00",bg="#6a53e9",fg="#faf9f2", font=("Times New Roman" ,15,"bold"))
+digital_clock_lbl.place(x=950,y=10)
+
+update_clock()
+
+window.resizable(True, True)
+window.mainloop()
